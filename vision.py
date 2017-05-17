@@ -1,9 +1,87 @@
 # import the necessary packages
 import imutils
 import cv2
+import camera
+import numpy as np
+
+CONFIG_FILE = 'config.txt'
 
 class Vision:
-	def getVertex(vertices):
+	def __init__(self):
+		self.camera = camera.Camera()
+		self.bmin, self.bmax = 0, 255
+		self.gmin, self.gmax = 0, 255
+		self.rmin, self.rmax = 0, 255
+
+		# try to reach config file
+		try:
+			f = open(CONFIG_FILE, 'r')
+			values = json.load(f)			
+			a, self.bmin, self.bmax = values[0]
+			a, self.gmin, self.gmax = values[1]
+			a, self.rmin, self.rmax = values[2]
+		except:
+			print 'Not able to find configuration file, running calibration'
+			self.calibrate_boundaries()
+			f = open(CONFIG_FILE, 'w')
+			json.dump([['b', self.bmin, self.bmax],['g', self.gmin, self.gmax],['r', self.rmin, self.rmax]], f)
+
+	def calibrate_boundaries(self):
+		window_name = 'Color filter calibration'
+		cv2.namedWindow(window_name)
+
+		# create filter trackbars
+		cv2.createTrackbar('R-', window_name, 0, 255, self.setRmin)
+		cv2.createTrackbar('R+', window_name, 255, 255, self.setRmax)
+		cv2.createTrackbar('G-', window_name, 0, 255, self.setGmin)
+		cv2.createTrackbar('G+', window_name, 255, 255, self.setGmax)
+		cv2.createTrackbar('B-', window_name, 0, 255, self.setBmin)
+		cv2.createTrackbar('B+', window_name, 255, 255, self.setBmax)
+
+		while(1):
+			img = self.camera.getFrame()
+			filtered = self.filterColor(img,([self.bmin, self.gmin, self.bmin],[self.bmax, self.gmax, self.bmax]))
+			cv2.imshow(window_name, filtered)
+			k = cv2.waitKey(1) & 0xFF 
+			if k == 27:
+				break
+			
+			#get trackbar position
+			test = cv2.getTrackbarPos('R-',window_name)	
+		cv2.destroyAllWindows()	
+	
+	def setRmin(self, x):
+		self.rmin = x
+		if self.rmin >= self.rmax:
+			cv2.setTrackbarPos('R+', 'Color filter calibration', self.rmin)
+
+	def setGmin(self, x):
+		self.gmin = x
+		if self.gmin >= self.gmax:
+			cv2.setTrackbarPos('G+', 'Color filter calibration', self.gmin)
+
+	def setBmin(self, x):
+		self.bmin = x
+		if self.bmin >= self.bmax:
+			cv2.setTrackbarPos('B+', 'Color filter calibration', self.bmin)
+
+	def setRmax(self, x):
+		self.rmax = x
+		if self.rmax <= self.rmin:
+			cv2.setTrackbarPos('R-', 'Color filter calibration', self.rmax)
+
+	def setGmax(self, x):
+		self.gmax = x
+		if self.gmax <= self.gmin:
+			cv2.setTrackbarPos('G-', 'Color filter calibration', self.gmax)
+
+	def setBmax(self, x):
+		self.bmax = x
+		if self.bmax <= self.bmin:
+			cv2.setTrackbarPos('B-', 'Color filter calibration', self.bmax)
+
+
+	def getVertex(self, vertices):
 		# get vertices
 		a = vertices[0][0]
 		b = vertices[1][0]
@@ -21,7 +99,7 @@ class Vision:
 			return b
 		return c 
 
-	def filterColor(image, boundaries): 
+	def filterColor(self, image, boundaries): 
 		# define the list of boundaries
 		#boundaries = 
 		#	([17, 15, 100], [50, 56, 200])
@@ -37,10 +115,9 @@ class Vision:
 		output = cv2.bitwise_and(image, image, mask = mask)
 		 
 		# show the image
-		cv2.imshow("images", np.hstack([image, output]))
-		cv2.waitKey(0)
+		return output
 
-	def detectLines(image):
+	def detectLines(self, image):
 		gray = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
 		edges = cv2.Canny(gray,100,200,apertureSize = 3)
 
@@ -55,7 +132,7 @@ class Vision:
 		#cv2.waitKey(0)
 		return lines		
 
-	def detectTriangle(image):
+	def detectTriangle(self, image):
 		# resize the image to a smaller factor so that
 		# the shapes can be approximated better
 		resized = imutils.resize(image, width=500)
