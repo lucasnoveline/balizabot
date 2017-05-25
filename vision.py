@@ -6,6 +6,9 @@ import camera
 import numpy as np
 
 class Vision:
+	def __init__(self): #this feels extremely EXG, sorry pals.
+		self.seg = Segmentation()
+
 	def getVertex(self, vertices):
 		# get vertices
 		a = vertices[0][0]
@@ -25,59 +28,64 @@ class Vision:
 		return c 
 
 	def detect_lines(self, image):
-		gray = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
-		edges = cv2.Canny(gray,100,200,apertureSize = 3)
+		# get green mask
+		g_img = self.seg.filter_color(image, 'g')
+		g_img = cv2.erode(g_img, np.ones((5,5), np.uint8), iterations = 1)
+		c = cv2.findContours(g_img.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+		c = c[0] if imutils.is_cv2() else c[1]
+		line_centers = []		
+		for cnt in c:
+			M = cv2.moments(cnt)
+			cX = int((M["m10"] / M["m00"]))
+			cY = int((M["m01"] / M["m00"]))	
+			line_centers = line_centers + [[cX,cY]]
 
-		minLineLength = 30
-		maxLineGap = 10
-		lines = cv2.HoughLinesP(edges,1,np.pi/180,15,minLineLength,maxLineGap)
-		for x in range(0, len(lines)):
-		    for x1,y1,x2,y2 in lines[x]:
-			cv2.line(image,(x1,y1),(x2,y2),(0,255,0),2)
+			cv2.circle(image, (cX, cY), 4, (255,100,255), 3)
+			cv2.drawContours(image, c, -1, (255,255,255), 2)
 
-		cv2.imshow('hough',image)
+		cv2.imshow('linhas', image)
 		cv2.waitKey(0)
-		return lines		
+		return line_centers
 
-	def detect_triangle(self, image):
-		# convert the image to grayscale, blur it slightly,
-		# and threshold it
-		gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-		blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-		thresh = cv2.threshold(blurred, 240, 255, cv2.THRESH_BINARY_INV)[1]
+	def detect_other_cars(self, image):
+		# get red mask
+		r_img = self.seg.filter_color(image, 'r')
+		r_img = cv2.erode(r_img, np.ones((5,5), np.uint8), iterations = 2)
+		c = cv2.findContours(r_img.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+		c = c[0] if imutils.is_cv2() else c[1]
+		car_centers = []			
+		for cnt in c:
+			M = cv2.moments(cnt)
+			cX = int((M["m10"] / M["m00"]))
+			cY = int((M["m01"] / M["m00"]))	
+			car_centers = car_centers + [[cX,cY]]
 
-		# find contours in the thresholded image and initialize the
-		# shape detector
-		cnts = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL,
-			cv2.CHAIN_APPROX_SIMPLE)
-		cnts = cnts[0] if imutils.is_cv2() else cnts[1]
+			cv2.circle(image, (cX, cY), 4, (255,100,255), 3)
+			cv2.drawContours(image, c, -1, (255,255,255), 2)
 
-		# loop over the contours
-		vertex = []
-		for c in cnts:
-			# check if triangle
-			peri = cv2.arcLength(c, True)
-			approx = cv2.approxPolyDP(c, 0.04 * peri, True)
-			if len(approx) != 3:
-				continue
-
-			# compute the center of the contour
-			M = cv2.moments(c)
-			cX = int((M["m10"] / M["m00"]) * ratio)
-			cY = int((M["m01"] / M["m00"]) * ratio)
-
-			# Draw centroid and direction vertex
-			cv2.circle(image, (cX, cY), 10, (0, 0, 0), -1) 
-			
-			vertex = getVertex(approx)	
-			print vertex
-			cv2.circle(image, (vertex[0], vertex[1]), 10, (0,0,0), -1)
-		 
-		# show the output image
-		cv2.imshow("Image", image)
+		cv2.imshow('linhas', image)
 		cv2.waitKey(0)
-		m = (vertex[1]-vertex[0])/(cX,cY)
-		return ((cX,cY), m)
+		return car_centers	
+
+	def detect_car(self, image):
+		# get yellow square center:
+		y_img = self.seg.filter_color(image, 'y')
+		M = cv2.moments(y_img)
+		cX_y = int((M["m10"] / M["m00"]))
+		cY_y = int((M["m01"] / M["m00"]))
+	
+		# get blue square center:
+		b_img = self.seg.filter_color(image, 'b')
+		M = cv2.moments(b_img)
+		cX_b = int((M["m10"] / M["m00"]))
+		cY_b = int((M["m01"] / M["m00"]))
+
+		## for debugging
+		cv2.line(image, (cX_y, cY_y), (cX_b,cY_b), (255,255,255), 3)
+		cv2.circle(image, (cX_y, cY_y), 4, (255,100,255), 3)
+		cv2.imshow('vetor', image)
+		cv2.waitKey(0)
+		
 
 
 class Segmentation:
@@ -85,6 +93,7 @@ class Segmentation:
 		self.window_name = 'Color filter calibration'
 		self.camera = camera.Camera()	
 		self.boundaries = [[[0,0,0],[255,255,255]],
+					[[0,0,0],[255,255,255]],
 					[[0,0,0],[255,255,255]],
 					[[0,0,0],[255,255,255]]]
 
@@ -114,10 +123,12 @@ class Segmentation:
 			return self.boundaries[1]
 		elif channel == 'r':
 			return self.boundaries[2]
+		elif channel == 'y':
+			return self.boundaries[3]
 		else:
 			return ([self.hmin, self.smin, self.vmin],[self.hmax, self.smax, self.vmax])
 
-	def filter_color(self, image, channel = ''): 
+	def filter_color(self, image, channel = '', calibration = False): 
 		# create NumPy arrays from the boundaries
 		boundaries = np.asarray(self.get_boundaries(channel))
 		# find the colors within the specified boundaries and apply
@@ -125,9 +136,12 @@ class Segmentation:
 		hsv_img = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 		mask = cv2.inRange(hsv_img, boundaries[0], boundaries[1])
 		output = cv2.bitwise_and(hsv_img, hsv_img, mask = mask)
-		 
+		
 		# show the image
-		return cv2.cvtColor(output, cv2.COLOR_HSV2BGR)
+		if calibration:
+			return cv2.cvtColor(output, cv2.COLOR_HSV2BGR)
+		else: 
+			return mask
 
 	def calibrate_boundaries(self):
 		cv2.namedWindow(self.window_name)
@@ -142,7 +156,7 @@ class Segmentation:
 
 		while(1):
 			img = self.camera.getFrame()		
-			output = self.filter_color(img)
+			output = self.filter_color(img, calibration = True)
 			
 			cv2.imshow(self.window_name, output)
 			k = cv2.waitKey(1) & 0xFF
@@ -152,6 +166,8 @@ class Segmentation:
 				self.gPressed()
 			if k == 98: 
 				self.bPressed() 
+			if k == 121:
+				self.yPressed()
 			if k == 27 or k == 10:
 				break	
 		cv2.destroyAllWindows()
@@ -203,3 +219,8 @@ class Segmentation:
 		self.boundaries[0][0] = [self.hmin, self.smin, self.vmin]
 		self.boundaries[0][1] = [self.hmax, self.smax, self.vmax]
 		print 'blue filter calibrated'
+
+	def yPressed(self):
+		self.boundaries[3][0] = [self.hmin, self.smin, self.vmin]
+		self.boundaries[3][1] = [self.hmax, self.smax, self.vmax]
+		print 'yellow filter calibrated'

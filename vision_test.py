@@ -16,10 +16,12 @@ img_g = seg.filter_color(img, 'g')
 img_b = seg.filter_color(img, 'b')
 
 # lines are green
-lines = vis.detect_lines(img_g)
+#lines = vis.detect_lines(img)
 
 # car is blue
-car_pos = vis.detect_triangle(img_b)
+#car_pos = vis.detect_car(img)
 
 # other cars are red
+other_cars = vis.detect_other_cars(img)
+
 # and so are you
