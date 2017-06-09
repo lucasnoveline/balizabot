@@ -4,94 +4,101 @@ import json
 import cv2
 import camera
 import numpy as np
+from math import atan2
 
 class Vision:
 	def __init__(self): #this feels extremely EXG, sorry pals.
 		self.seg = Segmentation()
 
-	def getVertex(self, vertices):
-		# get vertices
-		a = vertices[0][0]
-		b = vertices[1][0]
-		c = vertices[2][0]
-
-		# compute lengths
-		ab = ((b[0]-a[0])*(b[0]-a[0]) + (b[1]-a[1])*(b[1]-a[1]))**.5
-		bc = ((c[0]-b[0])*(c[0]-b[0]) + (c[1]-b[1])*(c[1]-b[1]))**.5
-		ac = ((c[0]-a[0])*(c[0]-a[0]) + (c[1]-a[1])*(c[1]-a[1]))**.5
-
-		# get vertex opposite to smaller side
-		if ac > bc and ab > bc:
-			return a
-		if bc > ac and ab > ac:
-			return b
-		return c 
-
+	### detecta linhas verdes, que representam marcacoes de estacionamento
+	## recebe:
+	# image - arquivo de imagem
+	## retorna:
+	# rectangles - [[centerx, centery],[height, width], angle of rotation]
 	def detect_lines(self, image):
 		# get green mask
 		g_img = self.seg.filter_color(image, 'g')
 		g_img = cv2.erode(g_img, np.ones((5,5), np.uint8), iterations = 1)
+
+		# separate contours
 		c = cv2.findContours(g_img.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 		c = c[0] if imutils.is_cv2() else c[1]
-		line_centers = []		
+
+		# get CoM for each contour and add it to result
+		rectangles = []
+		i = 1
 		for cnt in c:
 			M = cv2.moments(cnt)
 			cX = int((M["m10"] / M["m00"]))
 			cY = int((M["m01"] / M["m00"]))	
-			line_centers = line_centers + [[cX,cY]]
-
-			cv2.circle(image, (cX, cY), 4, (255,100,255), 3)
+			#line_centers = line_centers + [[cX,cY]]
+			rect = cv2.minAreaRect(cnt)
+			rectangles += [rect]
+			
+			# draw on original image
+			cv2.circle(image, (cX, cY), 4, (255,100,100), 3)
 			cv2.drawContours(image, c, -1, (255,255,255), 2)
-
+		# show result
 		cv2.imshow('linhas', image)
 		cv2.waitKey(0)
-		return line_centers
+		return rectangles
 
 	def detect_other_cars(self, image):
 		# get red mask
 		r_img = self.seg.filter_color(image, 'r')
 		r_img = cv2.erode(r_img, np.ones((5,5), np.uint8), iterations = 2)
+
+		# separate contours
 		c = cv2.findContours(r_img.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 		c = c[0] if imutils.is_cv2() else c[1]
-		car_centers = []			
+		
+		# get CoM for each contour and add it to result
+		car_centers = []
 		for cnt in c:
 			M = cv2.moments(cnt)
 			cX = int((M["m10"] / M["m00"]))
 			cY = int((M["m01"] / M["m00"]))	
 			car_centers = car_centers + [[cX,cY]]
 
-			cv2.circle(image, (cX, cY), 4, (255,100,255), 3)
+			# draw on original image
+			cv2.circle(image, (cX, cY), 4, (100,100,255), 3)
 			cv2.drawContours(image, c, -1, (255,255,255), 2)
-
-		cv2.imshow('linhas', image)
-		cv2.waitKey(0)
-		return car_centers	
+	
+		# show result
+		cv2.imshow('outros carros', image)
+		return car_centers
 
 	def detect_car(self, image):
 		# get yellow square center:
 		y_img = self.seg.filter_color(image, 'y')
+		y_img = cv2.erode(y_img, np.ones((5,5), np.uint8), iterations = 1)
 		M = cv2.moments(y_img)
 		cX_y = int((M["m10"] / M["m00"]))
 		cY_y = int((M["m01"] / M["m00"]))
 	
 		# get blue square center:
 		b_img = self.seg.filter_color(image, 'b')
+		b_img = cv2.erode(b_img, np.ones((5,5), np.uint8), iterations = 1)
 		M = cv2.moments(b_img)
 		cX_b = int((M["m10"] / M["m00"]))
 		cY_b = int((M["m01"] / M["m00"]))
 
-		## for debugging
+		# draw vector on original image
 		cv2.line(image, (cX_y, cY_y), (cX_b,cY_b), (255,255,255), 3)
-		cv2.circle(image, (cX_y, cY_y), 4, (255,100,255), 3)
+		cv2.circle(image, (cX_y, cY_y), 4, (100,255,100), 3)
+
+		# show result
 		cv2.imshow('vetor', image)
-		cv2.waitKey(0)
-		
+
+		# get center and orientation
+		center = [(cX_y + cX_b)/2, (cY_y + cY_b)/2]
+		orientation = atan2((cY_y - cY_b),(cX_y - cX_b))
+		return [center, orientation]
 
 
 class Segmentation:
 	def __init__(self):
 		self.window_name = 'Color filter calibration'
-		self.camera = camera.Camera()	
 		self.boundaries = [[[0,0,0],[255,255,255]],
 					[[0,0,0],[255,255,255]],
 					[[0,0,0],[255,255,255]],
@@ -145,7 +152,7 @@ class Segmentation:
 
 	def calibrate_boundaries(self):
 		cv2.namedWindow(self.window_name)
-
+		self.camera = camera.Camera()
 		# create filter trackbars
 		cv2.createTrackbar('H-', self.window_name, 0, 255, self.setHmin)
 		cv2.createTrackbar('H+', self.window_name, 255, 255, self.setHmax)
