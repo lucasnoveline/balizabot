@@ -1,4 +1,4 @@
-POKEMON = False;
+POKEMON = True;
 
 #if not POKEMON:
 #	from picamera.array import PiRGBArray
@@ -12,7 +12,7 @@ class Camera():
 			# initialize the camera and grab a reference to the raw camera capture
 			#self.camera = PiCamera()
 			#self.camera.resolution(640,480)
-			self.cap = cv2.VideoCapture(1)
+			self.cap = cv2.VideoCapture(0)
 
 	def getFrame(self):
 		if POKEMON:
