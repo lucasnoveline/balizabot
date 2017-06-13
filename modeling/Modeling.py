@@ -6,7 +6,7 @@ from vision import camera
 from math import tan
 import Lines
 
-DEBUG = False
+DEBUG = True
 if DEBUG:
     import cv2
 

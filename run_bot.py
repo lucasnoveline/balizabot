@@ -10,14 +10,23 @@ FORWARD = 1
 BACKWARD = -1
 
 model = Modeling()
+
+# VAI PEGAR AS LINHAS SIM
+model.init()
+model.init()
+model.init()
+model.init()
+model.init()
+model.init()
 model.init()
 
 #communication = SendData.SendData()
 model.update()
 decision_making = DecisionMaking.DecisionMaking()
 decision_making.update(model)
-control = LineFollower.LineFollower()
 
+control = LineFollower.LineFollower()
+print 'extern line_ref = (%d, %d)' % (decision_making.line_ref.x, decision_making.line_ref.y)
 control.setControlData(model.car, decision_making.desired_position, decision_making.line_ref)
 
 dutyMotor1 = control.desiredVelocity()

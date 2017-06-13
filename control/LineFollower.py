@@ -10,13 +10,16 @@ class LineFollower:
 
     def normalize(self, vector):
         magnitude = math.sqrt(vector.x ** 2 + vector.y ** 2)
+        if magnitude == 0:
+            return
         [vector.x, vector.y] = [vector.x/magnitude, vector.y/magnitude]
         return vector
 
     def setControlData(self, car, desired_position, line_ref):
         print "(%d, %d)" % (line_ref.x, line_ref.y)
         if (desired_position.x - car.pose.x) * line_ref.x + (desired_position.y - car.pose.y) * line_ref.y < 0:
-            line_ref = -line_ref
+            line_ref.x = -line_ref.x
+            line_ref.y = -line_ref.y
 
         line_ref = self.normalize(line_ref)
 
