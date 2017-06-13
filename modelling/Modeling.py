@@ -1,8 +1,10 @@
-import vision
-import camera
 import Car
 import OtherCars
-import Lines
+import camera
+
+import vision
+from modelling import Lines
+
 
 class Modeling:
     def __init__(self):
