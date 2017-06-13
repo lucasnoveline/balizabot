@@ -2,7 +2,7 @@ import vision
 import camera
 
 vis = vision.Vision()
-cam = camera.Camera()
+#cam = camera.Camera()
 
 while(1):
 	img = cam.getFrame()
