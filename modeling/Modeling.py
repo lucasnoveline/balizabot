@@ -3,7 +3,7 @@ import OtherCars
 import camera
 
 import vision
-from modelling import Lines
+from modeling import Lines
 
 
 class Modeling:
