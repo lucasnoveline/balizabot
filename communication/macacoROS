@@ -1,0 +1,20 @@
+Como rodar:
+rodar roscore no servidor (PI)
+no notebook: rodar value_publisher.py
+na PI: rodar FloatArrayListener.py
+
+
+Setup (no pc):
+digitar no terminal: export ROS_MASTER_URI=http://inserir_ip_da_pi_aqui:11311
+modificar /etc/hosts colocando IP e nome do computador em ambos os pcs
+
+
+sudo nmap -sT 192.168.0.*
+
+ssh usuario@ip
+
+sudo nano /etc/ssh/ssh_config
+
+sudo nano /etc/ssh/sshd_config
+
+sudo service ssh restart
