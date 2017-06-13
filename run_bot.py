@@ -1,8 +1,6 @@
-
-
-class Manager():
-    def __init__(self):
-
+import Modeling
 
 if __name__ == "__main__":
-    manager = Manager()
+    model = Modeling()
+    model.update()
+
