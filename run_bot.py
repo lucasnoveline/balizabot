@@ -3,19 +3,18 @@ from control import LineFollower
 from modeling import Pose2D
 from modeling import Vector2
 from communication import SendData
+from decision_making import DecisionMaking
 
 if __name__ == "__main__":
     model = Modeling()
     control = LineFollower()
     communication = SendData()
+    decisionMaking = DecisionMaking()
     frente = 1
     tras = -1
     model.update()
-
-    # Aqui vem o decision_making
-    desired_position = Pose2D()
-    line_ref = Vector2()
-    control.SetControlData(model.car(), desired_position, line_ref)
+    decisionMaking.update(model)
+    control.SetControlData(model.car(), decisionMaking.desired_position, decisionMaking.line_ref)
     dutyMotor1 = control.DesiredVelocity()
     dutyMotor2 = control.DesiredVelocity()
     servoAngle = control.DesiredAngle()
