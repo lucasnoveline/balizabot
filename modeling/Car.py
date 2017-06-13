@@ -1,11 +1,10 @@
+import Pose2D
+
+
 class Car():
     def __init__(self):
-        self.x = []
-        self.y = []
-        self.rotation = []
+        self.pose = Pose2D.Pose2D(0, 0, 0)
 
     def update(self, vector):
-        self.x = vector(1)
-        self.y = vector(2)
-        self.rotation = vector(3)
-
+        if vector is not None:
+            self.pose = Pose2D.Pose2D(vector[0][0], vector[0][1], vector[1])

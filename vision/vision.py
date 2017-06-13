@@ -6,6 +6,7 @@ import camera
 import numpy as np
 from math import atan2
 
+
 class Vision:
     def __init__(self):  # this feels extremely EXG, sorry pals.
         self.seg = Segmentation()
@@ -35,7 +36,7 @@ class Vision:
             cY = int((M["m01"] / M["m00"]))
             # line_centers = line_centers + [[cX,cY]]
             rect = cv2.minAreaRect(cnt)
-            rectangles += [rect]
+            rectangles += [[[int(rect[0][0]), int(rect[0][1])], [int(rect[1][0]), int(rect[1][1])], rect[2]]]
         return rectangles
 
     def detect_other_cars(self, image):
@@ -83,7 +84,7 @@ class Vision:
         cY_b = int((M["m01"] / M["m00"]))
 
         # get center and orientation
-        center = [(cX_y + cX_b) / 2, (cY_y + cY_b) / 2]
+        center = [int((cX_y + cX_b) / 2), int((cY_y + cY_b) / 2)]
         orientation = atan2((cY_y - cY_b), (cX_y - cX_b))
         return [center, orientation]
 
@@ -91,10 +92,10 @@ class Vision:
 class Segmentation:
     def __init__(self):
         self.window_name = 'Color filter calibration'
-        self.boundaries = [[[0,0,0],[255,255,255]],
-                           [[0,0,0],[255,255,255]],
-                           [[0,0,0],[255,255,255]],
-                           [[0,0,0],[255,255,255]]]
+        self.boundaries = [[[0, 0, 0], [255, 255, 255]],
+                           [[0, 0, 0], [255, 255, 255]],
+                           [[0, 0, 0], [255, 255, 255]],
+                           [[0, 0, 0], [255, 255, 255]]]
 
         # try to reach config file
         CONFIG_FILE = 'config.txt'
@@ -125,16 +126,16 @@ class Segmentation:
         elif channel == 'y':
             return self.boundaries[3]
         else:
-            return ([self.hmin, self.smin, self.vmin],[self.hmax, self.smax, self.vmax])
+            return ([self.hmin, self.smin, self.vmin], [self.hmax, self.smax, self.vmax])
 
-    def filter_color(self, image, channel = '', calibration = False):
+    def filter_color(self, image, channel='', calibration=False):
         # create NumPy arrays from the boundaries
         boundaries = np.asarray(self.get_boundaries(channel))
         # find the colors within the specified boundaries and apply
         # the mask
         hsv_img = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         mask = cv2.inRange(hsv_img, boundaries[0], boundaries[1])
-        output = cv2.bitwise_and(hsv_img, hsv_img, mask = mask)
+        output = cv2.bitwise_and(hsv_img, hsv_img, mask=mask)
 
         # show the image
         if calibration:
@@ -153,9 +154,9 @@ class Segmentation:
         cv2.createTrackbar('V-', self.window_name, 0, 255, self.setVmin)
         cv2.createTrackbar('V+', self.window_name, 255, 255, self.setVmax)
 
-        while(1):
+        while (1):
             img = self.camera.getFrame()
-            output = self.filter_color(img, calibration = True)
+            output = self.filter_color(img, calibration=True)
 
             cv2.imshow(self.window_name, output)
             k = cv2.waitKey(1) & 0xFF
@@ -224,24 +225,26 @@ class Segmentation:
         self.boundaries[3][1] = [self.hmax, self.smax, self.vmax]
         print 'yellow filter calibrated'
 
+
 if __name__ == "__main__":
     vis = Vision()
     cam = camera.Camera()
 
     while (1):
         img = cam.getFrame()
-        # lines are green
         lines = vis.detect_lines(img)
+        car_pos = vis.detect_car(img)
+        other_cars = vis.detect_other_cars(img)
+
+        # lines are green
         for line in lines:
             cv2.circle(img, (int(line[0][0]), int(line[0][1])), 4, (255, 100, 100), 3)
 
         # car is blue
-        car_pos = vis.detect_car(img)
         if car_pos is not None:
             cv2.circle(img, (car_pos[0][0], car_pos[0][1]), 4, (255, 100, 100), 3)
 
         # other cars are red
-        other_cars = vis.detect_other_cars(img)
         for other_car in other_cars:
             cv2.circle(img, (other_car[0], other_car[1]), 4, (255, 100, 100), 3)
 

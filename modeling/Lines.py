@@ -1,17 +1,20 @@
 class Lines:
     def __init__(self):
         self.lines = []
-        self.lines.x = []
-        self.lines.y = []
-        self.lines.height = []
-        self.lines.width = []
-        self.lines.rotation = []
+        self.quantity = 0
 
     def update(self, vector):
         # rectangles - [[centerx, centery],[height, width], angle of rotation]
+        self.lines = []
+        self.quantity = len(vector)
         for i in range(0, len(vector), 1):
-            self.lines[i].x = vector[i][0]
-            self.lines[i].y = vector[i][1]
-            self.lines[i].height = vector[i][2]
-            self.lines[i].width = vector[i][3]
-            self.lines[i].rotation = vector[i][4]
+            self.lines += [Line(vector[i][0][0], vector[i][0][1], vector[i][1][0], vector[i][1][1], vector[i][2])]
+
+
+class Line:
+    def __init__(self, x, y, height, width, rotation):
+        self.x = x
+        self.y = y
+        self.height = height
+        self.width = width
+        self.rotation = rotation
