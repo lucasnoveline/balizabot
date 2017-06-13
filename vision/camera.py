@@ -3,7 +3,6 @@ POKEMON = True;
 #if not POKEMON:
 #	from picamera.array import PiRGBArray
 #	from picamera import PiCamera
-import time
 import cv2
 
 class Camera():
@@ -23,6 +22,3 @@ class Camera():
 			#	return stream.array
 			ret, img = self.cap.read()
 			return img
-
-
-
