@@ -19,6 +19,7 @@ class Vision:
         # get green mask
         g_img = self.seg.filter_color(image, 'g')
         g_img = cv2.erode(g_img, np.ones((5, 5), np.uint8), iterations=1)
+        g_img = cv2.dilate(g_img, np.ones((5, 5), np.uint8), iterations=5)
 
         # separate contours
         c = cv2.findContours(g_img.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -26,24 +27,22 @@ class Vision:
 
         # get CoM for each contour and add it to result
         rectangles = []
-        i = 1
         for cnt in c:
             M = cv2.moments(cnt)
+            if M["m00"] == 0:
+                continue
             cX = int((M["m10"] / M["m00"]))
             cY = int((M["m01"] / M["m00"]))
             # line_centers = line_centers + [[cX,cY]]
             rect = cv2.minAreaRect(cnt)
             rectangles += [rect]
-
-            # draw on original image
-            cv2.circle(image, (cX, cY), 4, (255, 100, 100), 3)
-            cv2.drawContours(image, c, -1, (255, 255, 255), 2)
         return rectangles
 
     def detect_other_cars(self, image):
         # get red mask
         r_img = self.seg.filter_color(image, 'r')
         r_img = cv2.erode(r_img, np.ones((5, 5), np.uint8), iterations=2)
+        r_img = cv2.dilate(r_img, np.ones((5, 5), np.uint8), iterations=5)
 
         # separate contours
         c = cv2.findContours(r_img.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -53,33 +52,35 @@ class Vision:
         car_centers = []
         for cnt in c:
             M = cv2.moments(cnt)
+            if M["m00"] == 0:
+                continue
             cX = int((M["m10"] / M["m00"]))
             cY = int((M["m01"] / M["m00"]))
             car_centers = car_centers + [[cX, cY]]
-
-            # draw on original image
-            cv2.circle(image, (cX, cY), 4, (100, 100, 255), 3)
-            cv2.drawContours(image, c, -1, (255, 255, 255), 2)
         return car_centers
 
     def detect_car(self, image):
         # get yellow square center:
         y_img = self.seg.filter_color(image, 'y')
         y_img = cv2.erode(y_img, np.ones((5, 5), np.uint8), iterations=1)
+        y_img = cv2.dilate(y_img, np.ones((5, 5), np.uint8), iterations=5)
         M = cv2.moments(y_img)
+
+        if M["m00"] == 0:
+            return
         cX_y = int((M["m10"] / M["m00"]))
         cY_y = int((M["m01"] / M["m00"]))
 
         # get blue square center:
         b_img = self.seg.filter_color(image, 'b')
         b_img = cv2.erode(b_img, np.ones((5, 5), np.uint8), iterations=1)
+        b_img = cv2.dilate(b_img, np.ones((5, 5), np.uint8), iterations=5)
         M = cv2.moments(b_img)
+
+        if M["m00"] == 0:
+            return
         cX_b = int((M["m10"] / M["m00"]))
         cY_b = int((M["m01"] / M["m00"]))
-
-        # draw vector on original image
-        cv2.line(image, (cX_y, cY_y), (cX_b, cY_b), (255, 255, 255), 3)
-        cv2.circle(image, (cX_y, cY_y), 4, (100, 255, 100), 3)
 
         # get center and orientation
         center = [(cX_y + cX_b) / 2, (cY_y + cY_b) / 2]
@@ -225,3 +226,26 @@ class Segmentation:
 
 if __name__ == "__main__":
     vis = Vision()
+    cam = camera.Camera()
+
+    while (1):
+        img = cam.getFrame()
+        # lines are green
+        lines = vis.detect_lines(img)
+        for line in lines:
+            cv2.circle(img, (int(line[0][0]), int(line[0][1])), 4, (255, 100, 100), 3)
+
+        # car is blue
+        car_pos = vis.detect_car(img)
+        if car_pos is not None:
+            cv2.circle(img, (car_pos[0][0], car_pos[0][1]), 4, (255, 100, 100), 3)
+
+        # other cars are red
+        other_cars = vis.detect_other_cars(img)
+        for other_car in other_cars:
+            cv2.circle(img, (other_car[0], other_car[1]), 4, (255, 100, 100), 3)
+
+        cv2.imshow('img', img)
+        key = cv2.waitKey(1)
+        if key == 27:
+            break
