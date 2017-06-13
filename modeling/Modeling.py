@@ -17,11 +17,14 @@ class Modeling:
         self.otherCars = OtherCars()
         self.lines = Lines()
 
-    def update(self):
+    def init(self):
         frame = self.cam.getFrame()
         lines = self.vis.detect_lines(frame)
-        car = self.vis.detect_car(frame)
         other_cars = self.vis.detect_other_cars(frame)
-        self.lines.update(lines)
-        self.car.update(car)
         self.otherCars.update(other_cars)
+        self.lines.update(lines)
+
+    def update(self):
+        frame = self.cam.getFrame()
+        car = self.vis.detect_car(frame)
+        self.car.update(car)

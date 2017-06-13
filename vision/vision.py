@@ -222,3 +222,6 @@ class Segmentation:
         self.boundaries[3][0] = [self.hmin, self.smin, self.vmin]
         self.boundaries[3][1] = [self.hmax, self.smax, self.vmax]
         print 'yellow filter calibrated'
+
+if __name__ == "__main__":
+    vis = Vision()
