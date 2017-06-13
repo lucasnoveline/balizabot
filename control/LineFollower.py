@@ -9,25 +9,23 @@ class LineFollower:
         
 
     def normalize(self, vector):
-        n = len(vector)
-        magnitude = 0
-        for i in range(0, n, 1):
-            magnitude += vector(i)**2
-        magnitude = math.sqrt(magnitude)
-        vector = vector/magnitude
+        magnitude = math.sqrt(vector.x ** 2 + vector.y ** 2)
+        [vector.x, vector.y] = [vector.x/magnitude, vector.y/magnitude]
         return vector
 
     def setControlData(self, car, desired_position, line_ref):
-
-        if (desired_position.translation.x - car.x) * line_ref.x + (desired_position.translation.y - car.y) * line_ref.y < 0:
+        print "(%d, %d)" % (line_ref.x, line_ref.y)
+        if (desired_position.x - car.pose.x) * line_ref.x + (desired_position.y - car.pose.y) * line_ref.y < 0:
             line_ref = -line_ref
 
         line_ref = self.normalize(line_ref)
 
-        rotation = car.rotation
+        rotation = car.pose.rotation
         phiLine = math.atan2(line_ref.y, line_ref.x)# ref angle
-        positionError = math.sqrt((car.x - desired_position.x) * (car.x - desired_position.x) + (car.y - desired_position.y) * (car.y - desired_position.y))
-        lineError = car.x * line_ref.y - car.y * line_ref.x + line_ref.x * desired_position.y - line_ref.y * desired_position.x
+        positionError = math.sqrt((car.pose.x - desired_position.x) * (car.pose.x - desired_position.x) +
+                                  (car.pose.y - desired_position.y) * (car.pose.y - desired_position.y))
+        lineError = car.pose.x * line_ref.y - car.pose.y * line_ref.x + \
+                    line_ref.x * desired_position.y - line_ref.y * desired_position.x
         phiError = phiLine - rotation
         #k1, k2, k3 e k4 sao constantes carteadas de controle
         k1 = 1
