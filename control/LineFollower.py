@@ -2,11 +2,10 @@ import math
 
 class LineFollower:
     def __init__(self):
-        self.KSI = 0.56
-        self.W_N = 5
+        self.normalSpeed = 30
         self.V_RATIO = 50  # Is not calculated
-        self.DISTANCE_BETWEEN_AXIS
-        self.DISTANCE_BETWEEN_WHEELS
+        self.desiredVelocity = []
+        self.desiredAngle = []
         
 
     def normalize(self, vector):
@@ -18,7 +17,7 @@ class LineFollower:
         vector = vector/magnitude
         return vector
 
-    def setControlData(self, car, desired_position, line_ref, velocity):
+    def setControlData(self, car, desired_position, line_ref):
 
         if (desired_position.translation.x - car.x) * line_ref.x + (desired_position.translation.y - car.y) * line_ref.y < 0:
             line_ref = -line_ref
@@ -30,6 +29,14 @@ class LineFollower:
         positionError = math.sqrt((car.x - desired_position.x) * (car.x - desired_position.x) + (car.y - desired_position.y) * (car.y - desired_position.y))
         lineError = car.x * line_ref.y - car.y * line_ref.x + line_ref.x * desired_position.y - line_ref.y * desired_position.x
         phiError = phiLine - rotation
+        #k1, k2, k3 e k4 sao constantes carteadas de controle
+        k1 = 1
+        k2 = 1
+        k3 = 1
+        k4 = 1
+        self.desiredAngle = math.atan(k1 * lineError + k2 * phiError)
+        # self.desiredVelocity = self.normalSpeed/(1.0 + k3 * positionError + k4 * phiError)
+
 
 
 

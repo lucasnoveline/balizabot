@@ -1,6 +1,6 @@
 import Car
 import OtherCars
-import camera
+import vision.camera
 
 import vision
 from modeling import Lines
@@ -9,7 +9,7 @@ from modeling import Lines
 class Modeling:
     def __init__(self):
         self.vis = vision.Vision()
-        self.cam = camera.Camera()
+        self.cam = vision.camera.Camera()
         self.lines = Lines.Lines
         self.car = []
         self.otherCars = []
