@@ -23,6 +23,9 @@ motor1.start(15) # Duty cicle de inicio: 15%
 motor2 = IO.PWM(23,100) # Pino 23, frequencia 100 Hz
 motor2.start(15) # Duty cicle de inicio: 15%
 
+led = IO.PWM(16,100) # Pino 16, frequencia 100 Hz
+led.start(90) # Duty cicle de inicio: 50% 
+
 # Definindo constantes
 
 frente = 1
@@ -36,9 +39,11 @@ while True:
 		direcao = frente
 		velocidade = 15 + 1.0*direcao*5*t/100
 		angulo = 6.5 + 1.0*3*t/100
+		luz = 22.5*(t%5) + 1
 		servo.ChangeDutyCycle(angulo)
 		motor1.ChangeDutyCycle(velocidade)
 		motor2.ChangeDutyCycle(velocidade)
+		led.ChangeDutyCicle(luz)
 		print angulo
 		print t
 		time.sleep(0.1)
@@ -48,9 +53,11 @@ while True:
 		direcao = tras
 		velocidade = 15 + 1.0*direcao*5*t/100
 		angulo = 6.5 - 1.0*3*(100-t)/100
+		luz = 22.5*(t%5) + 1
 		servo.ChangeDutyCycle(angulo)
 		motor1.ChangeDutyCycle(velocidade)
 		motor2.ChangeDutyCycle(velocidade)
+		led.ChangeDutyCicle(luz)
 		print angulo
 		print t
 		time.sleep(0.1)
